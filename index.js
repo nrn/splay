@@ -6,15 +6,14 @@ var not = {
 module.exports = {
   insert: insert,
   seqRead: seqRead,
-
-
+  Node: Node
 }
 
-function insert (root, node) {
+function insert (root, node, fn) {
   var state = split(root, node, fn, { left: null, right: null })
   node.left = state.left
   node.right = state.right
-  root = node
+  return node
 }
 
 function seqRead (root, fn) {
