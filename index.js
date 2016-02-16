@@ -1,10 +1,10 @@
-var not = {
-  left: 'right',
-  right: 'left'
-}
-
 var L = 'left'
 var R = 'right'
+var not = {}
+not[L] = R
+not[R] = L
+
+var gen = 0
 
 // delete
 // join
@@ -20,10 +20,12 @@ module.exports = {
 }
 
 function insert (root, node, fn) {
+  gen += 1
   return splay(place(root, node, fn))
 }
 
 function seqRead (root, cb) {
+  gen += 1
   var all = []
   root = splay(lowest(root))
   all.push(root)
@@ -130,12 +132,14 @@ function lower (tree) {
   return highest(node, path)
 }
 
-function Node (key, value, left, right, id) {
+function Node (key, value, left, right) {
   this.value = value
   this.key = key
   this.left = left || null
   this.right = right || null
+  this._generation = gen
 }
 Node.prototype.copy = function () {
-  return new Node(this.key, this.value, this.left, this.right, this._id)
+  if (this._generation === gen) return this
+  return new Node(this.key, this.value, this.left, this.right)
 }

@@ -19,11 +19,9 @@ test('splay', function (t) {
   t.equal(tree.right.value, 5, 'left-left tree')
   t.equal(tree.right.left.value, 3, 'left-left tree')
 
-  splay.seqRead(tree).map(function (root) {
-    return splay.seqRead(root)
-  }).reduce(function (last, next) {
-    t.equal(last.length, next.length, 'all elements in the seqRead reprsent the same tree')
-    return next
-  })
+  t.same(splay.seqRead(tree).map(function (n) {
+    return n.value
+  }), [ 0.5, 1, 2, 3, 4, 5 ], 'seq read.')
+
   t.end()
 })
