@@ -27,71 +27,76 @@ module.exports = {
 }
 
 function insert (root, node, fn) {
-  node.left = null
-  node.right = null
-  return splay(root, node, fn)
+  return splay(place(root, node, fn))
 }
 
-function seqRead (node, cb, compare) {
-  var nextNode = lowest(node)
-  console.log(nextNode)
-  node = splay(node, nextNode, compare)
-  console.log(node)
-  cb(node)
+function seqRead (root, cb) {
+  var all = []
+  root = splay(lowest(root))
+  all.push(root)
 
-  while (nextNode = higher(node)) {
-    node = splay(node, nextNode, compare)
-    cb(node)
+  while (root = splay(higher(root))) {
+    all.push(root)
   }
+  return all
 }
 
-
-function splay (gp, node, compare) {
-  var tmp
+function splay (path) {
+  if (!path) return null
+  var newRoot = path.pop().copy()
   var par
-  var nextGp
-  var first
-  var second
-  node.left = null
-  node.right = null
-  while (gp) {
-    tmp = par = nextGp = null
-    first = second = ''
-    if (compare(node.value, gp.value, node.key, gp.key) < 0) {
-      first = L
-    } else {
-      first = R
+  var gp
+  var ggp
+  var tmp
+  while (true) {
+    par = path.pop()
+    if (!par) break
+    par = par.copy()
+    gp = path.pop()
+    if (gp) {
+      gp = gp.copy()
     }
-    par = gp[first]
-    if (par === node) break
-    if (!par) {
-      zig(first, node, gp)
-      gp = null
+    if (newRoot.same(par.right)) {
+      tmp = newRoot.left
+      newRoot.left = par
+      par.right = tmp
+      if (gp && par.same(gp.right)) {
+        tmp = par.left
+        par.left = gp
+        gp.right = tmp
+      } else if (gp) {
+        tmp = newRoot.right
+        newRoot.right = gp
+        gp.left = tmp
+      }
     } else {
-      if (compare(node.value, par.value, node.key, par.key) < 0) {
-        second = L
-      } else {
-        second = R
+      tmp = newRoot.right
+      newRoot.right = par
+      par.left = tmp
+      if (gp && par.same(gp.left)) {
+        tmp = par.right
+        par.right = gp
+        gp.left = tmp
+      } else if (gp) {
+        tmp = newRoot.left
+        newRoot.left = gp
+        gp.right = tmp
       }
-
-      nextGp = par[second]
-
-      if (first === second) {
-        tmp = par[not[first]]
-        par[not[first]] = gp
-        gp[first] = tmp
-
-        zig(first, node, par)
-      } else {
-        zig(first, node, gp)
-        zig(second, node, par)
-      }
-      gp = nextGp
-      if (gp === node) break
     }
+    gpp = path.pop()
+    if (!ggp) break
+    gpp = gpp.copy()
+    if (gp.same(ggp.left)) {
+      ggp.left = newRoot
+    } else {
+      ggp.right = newRoot
+    }
+    path.push(gpp)
   }
-  return node
+
+  return newRoot
 }
+
 function zig (dir, state, node) {
   node[dir] = null
   if (state[not[dir]]) {
@@ -105,103 +110,68 @@ function zig (dir, state, node) {
   }
 }
 
-function place (key, val, compare, node, path) {
+function place (node, toInsert, compare) {
+  var path = []
   var side = ''
   while (node) {
     path.push(node)
-    if (compare(val, node.value, key, node.key) < 0) {
+    if (compare(toInsert.value, node.value, toInsert.key, node.key) < 0) {
       side = 'left'
     } else {
       side = 'right'
     }
     node = node[side]
   }
-  node = new Node(key, val)
-  if (path.length) path[path.length - 1][side] = node
-  path.push(node)
-  return node
+  if (path.length) path[path.length - 1][side] = toInsert
+  path.push(toInsert)
+  return path
 }
 
-function lowest (node) {
+function lowest (node, path) {
+  path || (path = [])
+  path.push(node)
   while (node && node[L]) {
     node = node[L]
+    path.push(node)
   }
-  return node
+  return path
 }
 
 function highest (node) {
+  path || (path = [])
+  path.push(node)
   while (node[R]) {
     node = node[R]
+    path.push(node)
   }
-  return node
+  return path
 }
 
 function higher (tree) {
+  var path = [tree]
   var node = tree[R]
-  if (!node) return node
-  return lowest(node)
+  if (!node) return null
+  return lowest(node, path)
 }
 
 function lower (tree) {
+  var path = [tree]
   var node = tree[L]
-  if (!node) return node
-  return highest(node)
+  if (!node) return path
+  return highest(node, path)
 }
 
-function Node (key, value, left, right) {
+function Node (key, value, left, right, id) {
   this.value = value
   this.key = key
   this.left = left || null
   this.right = right || null
+  this._id = id || Math.random()
 }
 Node.prototype.copy = function () {
-  return new Node(this.key, this.value, this.left, this.right)
+  return new Node(this.key, this.value, this.left, this.right, this._id)
+}
+Node.prototype.same = function (node) {
+  return node && node._id === this._id
 }
 
-// function splay (path, root) {
-//   var par
-//   var gp
-//   var ggp
-//   var tmp
-//   while (true) {
-//     par = path.pop()
-//     gp = path.pop()
-//     ggp = path[path.length - 1]
-//     if (!par) break
-//     if (root === par.right) {
-//       tmp = root.left
-//       root.left = par
-//       par.right = tmp
-//       if (gp && par === gp.right) {
-//         tmp = par.left
-//         par.left = gp
-//         gp.right = tmp
-//       } else if (gp) {
-//         tmp = root.right
-//         root.right = gp
-//         gp.left = tmp
-//       }
-//     } else {
-//       tmp = root.right
-//       root.right = par
-//       par.left = tmp
-//       if (gp && par === gp.left) {
-//         tmp = par.right
-//         par.right = gp
-//         gp.left = tmp
-//       } else if (gp) {
-//         tmp = root.left
-//         root.left = gp
-//         gp.right = tmp
-//       }
-//     }
-//     if (!ggp) break
-//     if (ggp.left === gp) {
-//       ggp.left = root
-//     } else {
-//       ggp.right = root
-//     }
-//   }
-
-//   return root
-// }
