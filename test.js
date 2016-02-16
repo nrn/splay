@@ -11,14 +11,18 @@ test('splay', function (t) {
   t.equal(tree.left.value, 1, 'puts original value on left subtree')
   tree = splay.insert(tree, new splay.Node(3, 3), gt)
   t.equal(tree.left.left.value, 1, 'puts original value on left subtree')
+  tree = splay.insert(tree, new splay.Node(4, 4), gt)
+  t.equal(tree.left.left.left.value, 1, 'puts original value on left subtree')
+  tree = splay.insert(tree, new splay.Node(5, 5), gt)
+  t.equal(tree.left.left.left.left.value, 1, 'puts original value on left subtree')
   tree = splay.insert(tree, new splay.Node(0.5, 0.5), gt)
-  t.equal(tree.right.value, 1, 'left-left tree')
-  t.equal(tree.right.right.value, 2, 'left-left tree')
+  t.equal(tree.right.value, 5, 'left-left tree')
+  t.equal(tree.right.left.value, 3, 'left-left tree')
 
   splay.seqRead(tree).map(function (root) {
     return splay.seqRead(root)
   }).reduce(function (last, next) {
-    t.same(last, next, 'all elements in the seqRead reprsent the same tree')
+    t.equal(last.length, next.length, 'all elements in the seqRead reprsent the same tree')
     return next
   })
   t.end()

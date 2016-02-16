@@ -6,13 +6,6 @@ var not = {
 var L = 'left'
 var R = 'right'
 
-// function L (node) {
-//   return node.left
-// }
-// function R (node) {
-//   return node.right
-// }
-
 // delete
 // join
 
@@ -46,68 +39,42 @@ function splay (path) {
   var newRoot = path.pop().copy()
   var par
   var gp
-  var ggp
   var tmp
+  var first
+  var second
   while (true) {
+    second = path.pop()
     par = path.pop()
     if (!par) break
     par = par.copy()
+    first = path.pop()
     gp = path.pop()
     if (gp) {
       gp = gp.copy()
     }
-    if (newRoot.same(par.right)) {
-      tmp = newRoot.left
-      newRoot.left = par
-      par.right = tmp
-      if (gp && par.same(gp.right)) {
-        tmp = par.left
-        par.left = gp
-        gp.right = tmp
-      } else if (gp) {
-        tmp = newRoot.right
-        newRoot.right = gp
-        gp.left = tmp
-      }
-    } else {
-      tmp = newRoot.right
-      newRoot.right = par
-      par.left = tmp
-      if (gp && par.same(gp.left)) {
-        tmp = par.right
-        par.right = gp
-        gp.left = tmp
-      } else if (gp) {
-        tmp = newRoot.left
-        newRoot.left = gp
-        gp.right = tmp
-      }
+    tmp = newRoot[not[second]]
+    newRoot[not[second]] = par
+    par[second] = tmp
+    if (first === second) {
+      tmp = par[not[first]]
+      par[not[first]] = gp
+      gp[first] = tmp
+    } else if (first === not[second]) {
+      tmp = newRoot[not[first]]
+      newRoot[not[first]] = gp
+      gp[first] = tmp
     }
-    gpp = path.pop()
-    if (!ggp) break
-    gpp = gpp.copy()
-    if (gp.same(ggp.left)) {
-      ggp.left = newRoot
-    } else {
-      ggp.right = newRoot
-    }
-    path.push(gpp)
+    // ggp[third] always gets thrown out on next iteration
+    // third = path.pop()
+    // ggp = path.pop()
+    // if (!ggp) break
+    // ggp = ggp.copy()
+    // ggp[third] = newRoot
+    // path.push(ggp)
+    // path.push(third)
   }
 
   return newRoot
-}
-
-function zig (dir, state, node) {
-  node[dir] = null
-  if (state[not[dir]]) {
-    var branch = state[not[dir]]
-    while (branch[dir]) {
-      branch = branch[dir]
-    }
-    branch[dir] = node
-  } else {
-    state[not[dir]] = node
-  }
 }
 
 function place (node, toInsert, compare) {
@@ -116,13 +83,13 @@ function place (node, toInsert, compare) {
   while (node) {
     path.push(node)
     if (compare(toInsert.value, node.value, toInsert.key, node.key) < 0) {
-      side = 'left'
+      side = L
     } else {
-      side = 'right'
+      side = R
     }
     node = node[side]
+    path.push(side)
   }
-  if (path.length) path[path.length - 1][side] = toInsert
   path.push(toInsert)
   return path
 }
@@ -132,6 +99,7 @@ function lowest (node, path) {
   path.push(node)
   while (node && node[L]) {
     node = node[L]
+    path.push(L)
     path.push(node)
   }
   return path
@@ -142,20 +110,21 @@ function highest (node) {
   path.push(node)
   while (node[R]) {
     node = node[R]
+    path.push(R)
     path.push(node)
   }
   return path
 }
 
 function higher (tree) {
-  var path = [tree]
+  var path = [tree, R]
   var node = tree[R]
   if (!node) return null
   return lowest(node, path)
 }
 
 function lower (tree) {
-  var path = [tree]
+  var path = [tree, L]
   var node = tree[L]
   if (!node) return path
   return highest(node, path)
@@ -166,12 +135,7 @@ function Node (key, value, left, right, id) {
   this.key = key
   this.left = left || null
   this.right = right || null
-  this._id = id || Math.random()
 }
 Node.prototype.copy = function () {
   return new Node(this.key, this.value, this.left, this.right, this._id)
 }
-Node.prototype.same = function (node) {
-  return node && node._id === this._id
-}
-
