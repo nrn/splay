@@ -1,44 +1,52 @@
+var K = 'key'
+var V = 'value'
 var L = 'left'
 var R = 'right'
+
 var not = {}
 not[L] = R
 not[R] = L
-
-var gen = 0
 
 // delete
 // join
 
 module.exports = {
   insert: insert,
+  remove: remove,
   seqRead: seqRead,
   Node: Node,
   lower: lower,
   lowest: lowest,
   higher: higher,
-  highest: highest
+  highest: highest,
+  push: push,
+  K: K,
+  V: V,
+  L: L,
+  R: R
 }
 
 function insert (root, node, fn) {
-  gen += 1
   return splay(place(root, node, fn))
 }
 
-function seqRead (root, cb) {
-  gen += 1
-  var all = []
-  root = splay(lowest(root))
-  all.push(root)
+function remove (root, node, fn) {
+  return splay(pluck(root, node, fn))
+}
 
-  while (root = splay(higher(root))) {
-    all.push(root)
+function seqRead (tree, cb) {
+  tree = splay(lowest(tree))
+  var quit = cb(tree)
+
+  while (!quit && (tree = splay(higher(tree)))) {
+    quit = cb(tree)
   }
-  return all
+  return tree
 }
 
 function splay (path) {
   if (!path) return null
-  var newRoot = path.pop().copy()
+  var newRoot = path.pop()
   var par
   var gp
   var tmp
@@ -48,12 +56,8 @@ function splay (path) {
     second = path.pop()
     par = path.pop()
     if (!par) break
-    par = par.copy()
     first = path.pop()
     gp = path.pop()
-    if (gp) {
-      gp = gp.copy()
-    }
     tmp = newRoot[not[second]]
     newRoot[not[second]] = par
     par[second] = tmp
@@ -66,14 +70,6 @@ function splay (path) {
       newRoot[not[first]] = gp
       gp[first] = tmp
     }
-    // ggp[third] always gets thrown out on next iteration
-    // third = path.pop()
-    // ggp = path.pop()
-    // if (!ggp) break
-    // ggp = ggp.copy()
-    // ggp[third] = newRoot
-    // path.push(ggp)
-    // path.push(third)
   }
 
   return newRoot
@@ -96,6 +92,47 @@ function place (node, toInsert, compare) {
   return path
 }
 
+function pluck (node, toDelete, compare) {
+  var path = []
+  var side = ''
+  while (node) {
+    path.push((node))
+    if (compare(toDelete.value, node.value, toDelete.key, node.key) < 0) {
+      side = L
+    } else {
+      side = R
+    }
+    node = node[side]
+    if (node === toDelete) {
+      break
+    }
+    path.push(side)
+  }
+  path[path.length -1][side] = join(node[L], node[R])
+  return path
+}
+
+function join (left, right) {
+  if (!left) {
+    return right
+  }
+  var result = splay(highest(left))
+  result[R] = right
+  return result
+}
+
+function push (tree, node) {
+  if (!tree) return node
+  var path = highest(tree)
+  path.push(node)
+  return splay(path)
+}
+
+function pop (tree) {
+  var path = highest(tree)
+  return splay(path)
+}
+
 function lowest (node, path) {
   path || (path = [])
   path.push(node)
@@ -107,7 +144,7 @@ function lowest (node, path) {
   return path
 }
 
-function highest (node) {
+function highest (node, path) {
   path || (path = [])
   path.push(node)
   while (node[R]) {
@@ -137,9 +174,4 @@ function Node (key, value, left, right) {
   this.key = key
   this.left = left || null
   this.right = right || null
-  this._generation = gen
-}
-Node.prototype.copy = function () {
-  if (this._generation === gen) return this
-  return new Node(this.key, this.value, this.left, this.right)
 }
