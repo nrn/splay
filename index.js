@@ -12,8 +12,7 @@ not[R] = L
 module.exports = {
   insert: insert,
   remove: remove,
-  seqRead: seqRead,
-  forEach: seqRead,
+  forEach: forEach,
   Node: Node,
   lower: lower,
   lowest: lowest,
@@ -38,14 +37,15 @@ function remove (root, item, fn) {
   return splay(pluck(root, item, fn))
 }
 
-function seqRead (tree, cb) {
-  tree = splay(lowest(tree))
-  var quit = cb(tree[V])
+function forEach (tree, cb) {
+  tree = first(tree)
+  cb(tree[V])
+  tree = tree[R]
 
-  while (!quit && (tree = splay(higher(tree)))) {
-    quit = cb(tree[V])
+  while (tree = first(tree)) {
+    cb(tree[V])
+    tree = tree[R]
   }
-  return tree
 }
 
 function splay (path) {
@@ -163,14 +163,14 @@ function lowest (node, path) {
 }
 
 function last (tree) {
-  if (tree[R] == null) {
+  if (!tree || tree[R] == null) {
     return tree
   }
   return splay(highest(tree))
 }
 
 function first (tree) {
-  if (tree[L] == null) {
+  if (!tree || tree[L] == null) {
     return tree
   }
   return splay(lowest(tree))
