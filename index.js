@@ -9,42 +9,38 @@ not[R] = L
 // delete
 // join
 
-module.exports = {
-  insert: insert,
-  remove: remove,
-  forEach: forEach,
-  Node: Node,
-  lower: lower,
-  lowest: lowest,
-  higher: higher,
-  highest: highest,
-  last: last,
-  first: first,
-  push: push,
-  pop: pop,
-  shift: shift,
-  unshift: unshift,
-  V: V,
-  L: L,
-  R: R
+createTree.Node = Node
+createTree.V = V
+createTree.L = L
+createTree.R = R
+module.exports = createTree
+
+function createTree (value) {
+  return new Node(value)
 }
 
-function insert (root, item, fn) {
-  return splay(place(root, new Node(item), fn))
+function Node (value, left, right) {
+  this.value = value
+  this.left = left || null
+  this.right = right || null
 }
 
-function remove (root, item, fn) {
-  return splay(pluck(root, item, fn))
+Node.prototype.insert = function insert (item, fn) {
+  return splay(this.place(new Node(item), fn))
 }
 
-function forEach (tree, cb) {
-  tree = first(tree)
-  cb(tree[V])
-  tree = tree[R]
+Node.prototype.remove = function remove (item, fn) {
+  return splay(this.pluck(item, fn))
+}
 
-  while (tree = first(tree)) {
-    cb(tree[V])
-    tree = tree[R]
+Node.prototype.forEach = function forEach (cb) {
+  var idx = 0
+  tree = this.first()
+  cb(tree[V], idx++)
+
+  while (tree = tree[R]) {
+    tree = tree.first()
+    cb(tree[V], idx++)
   }
 }
 
@@ -79,11 +75,12 @@ function splay (path) {
   return newRoot
 }
 
-function place (node, toInsert, compare) {
+Node.prototype.place = function place (toInsert, compare) {
   var path = []
   var side = ''
+  var node = this
   while (node) {
-    path.push(copyNode(node))
+    path.push(node.copy())
     if (compare(toInsert[V], node[V]) < 0) {
       side = L
     } else {
@@ -96,11 +93,12 @@ function place (node, toInsert, compare) {
   return path
 }
 
-function pluck (node, toDelete, compare) {
+Node.prototype.pluck = function pluck (toDelete, compare) {
+  var node = this
   var path = []
   var side = ''
   while (node) {
-    path.push(copyNode(node))
+    path.push(node.copy())
     if (compare(toDelete, node.value) < 0) {
       side = L
     } else {
@@ -120,94 +118,100 @@ function join (left, right) {
   if (!left) {
     return right
   }
-  var result = splay(highest(left))
+  var result = splay(left.highest())
   result[R] = right
   return result
 }
 
-function push (tree, item) {
+Node.prototype.unshift = function unshift (item) {
   var node = new Node(item)
-  if (!tree) return node
-  var path = highest(tree)
-  path.push(R)
-  path.push(node)
-  return splay(path)
-}
-
-function pop (tree) {
-  return splay(highest(tree))[L]
-}
-
-function unshift (tree, item) {
-  var node = new Node(item)
-  if (!tree) return node
-  var path = lowest(tree)
+  var path = this.lowest()
   path.push(L)
   path.push(node)
   return splay(path)
 }
 
-function shift (tree) {
-  return splay(lowest(tree))[R]
+Node.prototype.shift = function shift () {
+  return splay(this.lowest())[R]
 }
 
-function lowest (node, path) {
+Node.prototype.copy = function copy () {
+  return new Node(this[V], this[L], this[R])
+}
+
+Node.prototype.higher = function higher () {
+  var path = [this, R]
+  var node = this[R]
+  if (!node) return null
+  return node.lowest(path)
+}
+
+Node.prototype.lower = function lower () {
+  var path = [this, L]
+  var node = this[L]
+  if (!node) return path
+  return node.highest(path)
+}
+
+Node.prototype.highest = function highest (path) {
+  var node = this
   path || (path = [])
-  path.push(copyNode(node))
-  while (node && node[L]) {
-    node = node[L]
-    path.push(L)
-    path.push(copyNode(node))
-  }
-  return path
-}
-
-function last (tree) {
-  if (!tree || tree[R] == null) {
-    return tree
-  }
-  return splay(highest(tree))
-}
-
-function first (tree) {
-  if (!tree || tree[L] == null) {
-    return tree
-  }
-  return splay(lowest(tree))
-}
-
-function highest (node, path) {
-  path || (path = [])
-  path.push(copyNode(node))
+  path.push(this.copy())
   while (node[R]) {
     node = node[R]
     path.push(R)
-    path.push(copyNode(node))
+    path.push(node.copy())
   }
   return path
 }
 
-function higher (tree) {
-  var path = [tree, R]
-  var node = tree[R]
-  if (!node) return null
-  return lowest(node, path)
+Node.prototype.lowest = function lowest (path) {
+  var node = this
+  path || (path = [])
+  path.push(node.copy())
+  while (node && node[L]) {
+    node = node[L]
+    path.push(L)
+    path.push(node.copy())
+  }
+  return path
 }
 
-function lower (tree) {
-  var path = [tree, L]
-  var node = tree[L]
-  if (!node) return path
-  return highest(node, path)
+Node.prototype.pop = function pop () {
+  return splay(this.highest())[L]
 }
 
-function Node (value, left, right) {
-  this.value = value
-  this.left = left || null
-  this.right = right || null
+Node.prototype.push = function push (item) {
+  var node = new Node(item)
+  var path = this.highest()
+  path.push(R)
+  path.push(node)
+  return splay(path)
 }
-function copyNode (node) {
-  if (node == null) return node
-  return new Node(node[V], node[L], node[R])
+
+Node.prototype.first = function first () {
+  if (this[L] == null) {
+    return this
+  }
+  return splay(this.lowest())
+}
+
+Node.prototype.last = function last () {
+  if (this[R] == null) {
+    return this
+  }
+  return splay(this.highest())
+}
+
+Node.prototype.l = function () {
+  return this.left
+}
+
+Node.prototype.r = function () {
+  return this.right
+}
+
+Node.prototype.v = function () {
+  return this.value
 }
 
