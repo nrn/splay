@@ -1,4 +1,3 @@
-var K = 'key'
 var V = 'value'
 var L = 'left'
 var R = 'right'
@@ -14,32 +13,37 @@ module.exports = {
   insert: insert,
   remove: remove,
   seqRead: seqRead,
+  forEach: seqRead,
   Node: Node,
   lower: lower,
   lowest: lowest,
   higher: higher,
   highest: highest,
+  last: last,
+  first: first,
   push: push,
-  K: K,
+  pop: pop,
+  shift: shift,
+  unshift: unshift,
   V: V,
   L: L,
   R: R
 }
 
-function insert (root, node, fn) {
-  return splay(place(root, node, fn))
+function insert (root, item, fn) {
+  return splay(place(root, new Node(item), fn))
 }
 
-function remove (root, node, fn) {
-  return splay(pluck(root, node, fn))
+function remove (root, item, fn) {
+  return splay(pluck(root, item, fn))
 }
 
 function seqRead (tree, cb) {
   tree = splay(lowest(tree))
-  var quit = cb(tree)
+  var quit = cb(tree[V])
 
   while (!quit && (tree = splay(higher(tree)))) {
-    quit = cb(tree)
+    quit = cb(tree[V])
   }
   return tree
 }
@@ -79,8 +83,8 @@ function place (node, toInsert, compare) {
   var path = []
   var side = ''
   while (node) {
-    path.push(node)
-    if (compare(toInsert.value, node.value, toInsert.key, node.key) < 0) {
+    path.push(copyNode(node))
+    if (compare(toInsert[V], node[V]) < 0) {
       side = L
     } else {
       side = R
@@ -96,14 +100,14 @@ function pluck (node, toDelete, compare) {
   var path = []
   var side = ''
   while (node) {
-    path.push((node))
-    if (compare(toDelete.value, node.value, toDelete.key, node.key) < 0) {
+    path.push(copyNode(node))
+    if (compare(toDelete, node.value) < 0) {
       side = L
     } else {
       side = R
     }
     node = node[side]
-    if (node === toDelete) {
+    if (toDelete === node.value) {
       break
     }
     path.push(side)
@@ -121,36 +125,64 @@ function join (left, right) {
   return result
 }
 
-function push (tree, node) {
+function push (tree, item) {
+  var node = new Node(item)
   if (!tree) return node
   var path = highest(tree)
+  path.push(R)
   path.push(node)
   return splay(path)
 }
 
 function pop (tree) {
-  var path = highest(tree)
+  return splay(highest(tree))[L]
+}
+
+function unshift (tree, item) {
+  var node = new Node(item)
+  if (!tree) return node
+  var path = lowest(tree)
+  path.push(L)
+  path.push(node)
   return splay(path)
+}
+
+function shift (tree) {
+  return splay(lowest(tree))[R]
 }
 
 function lowest (node, path) {
   path || (path = [])
-  path.push(node)
+  path.push(copyNode(node))
   while (node && node[L]) {
     node = node[L]
     path.push(L)
-    path.push(node)
+    path.push(copyNode(node))
   }
   return path
 }
 
+function last (tree) {
+  if (tree[R] == null) {
+    return tree
+  }
+  return splay(highest(tree))
+}
+
+function first (tree) {
+  if (tree[L] == null) {
+    return tree
+  }
+  return splay(lowest(tree))
+}
+
 function highest (node, path) {
   path || (path = [])
-  path.push(node)
+  path.push(copyNode(node))
   while (node[R]) {
     node = node[R]
     path.push(R)
-    path.push(node)
+    path.push(copyNode(node))
   }
   return path
 }
@@ -169,9 +201,13 @@ function lower (tree) {
   return highest(node, path)
 }
 
-function Node (key, value, left, right) {
+function Node (value, left, right) {
   this.value = value
-  this.key = key
   this.left = left || null
   this.right = right || null
 }
+function copyNode (node) {
+  if (node == null) return node
+  return new Node(node[V], node[L], node[R])
+}
+
