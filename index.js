@@ -3,7 +3,7 @@ var not = {
   left: 'right'
 }
 
-var empty = new Node ()
+var empty = new SplayNode ()
 empty.left = empty
 empty.right = empty
 
@@ -11,32 +11,33 @@ if (typeof Object.freeze === 'function') {
   Object.freeze(empty)
 }
 
-createTree.Node = Node
+createTree.SplayNode = SplayNode
 createTree.empty = empty
+createTree.createTree = createTree
 module.exports = createTree
 
 function createTree (value) {
   if (typeof value === 'undefined') {
     return empty
   }
-  return new Node(value)
+  return new SplayNode(value)
 }
 
-function Node (value, left, right) {
+function SplayNode (value, left, right) {
   this.value = value
   this.left = left || empty
   this.right = right || empty
 }
 
-Node.prototype.insert = function insert (item, fn) {
-  return splay(this.place(new Node(item), fn))
+SplayNode.prototype.insert = function insert (item, fn) {
+  return this._splay(this._place(new SplayNode(item), fn))
 }
 
-Node.prototype.remove = function remove (item, fn) {
-  return splay(this.pluck(item, fn))
+SplayNode.prototype.remove = function remove (item, fn) {
+  return this._splay(this._pluck(item, fn))
 }
 
-Node.prototype.forEach = function forEach (cb) {
+SplayNode.prototype.forEach = function forEach (cb) {
   var idx = 0
   tree = this.first()
   cb(tree.value, idx++)
@@ -49,7 +50,57 @@ Node.prototype.forEach = function forEach (cb) {
   }
 }
 
-function splay (path) {
+SplayNode.prototype.join = function join (right) {
+  var left = this
+  if (left === empty) {
+    return right
+  }
+  var result = this._splay(left._highest())
+  result.right = right
+  return result
+}
+
+SplayNode.prototype.isEmpty = function isEmpty () {
+  return this === empty
+}
+
+SplayNode.prototype.first = function first () {
+  if (this.left === empty) {
+    return this
+  }
+  return this._splay(this._lowest())
+}
+
+SplayNode.prototype.last = function last () {
+  if (this.right === empty) {
+    return this
+  }
+  return this._splay(this._highest())
+}
+
+SplayNode.prototype.unshift = function unshift (item) {
+  var path = this._lowest()
+  path.push('left')
+  path.push(new SplayNode(item))
+  return this._splay(path)
+}
+
+SplayNode.prototype.shift = function shift () {
+  return this._splay(this._lowest()).right
+}
+
+SplayNode.prototype.pop = function pop () {
+  return this._splay(this._highest()).left
+}
+
+SplayNode.prototype.push = function push (item) {
+  var path = this._highest()
+  path.push('right')
+  path.push(new SplayNode(item))
+  return this._splay(path)
+}
+
+SplayNode.prototype._splay = function _splay (path) {
   if (!path) return empty
   var newRoot = path.pop()
   var par
@@ -80,7 +131,7 @@ function splay (path) {
   return newRoot
 }
 
-Node.prototype.place = function place (toInsert, compare) {
+SplayNode.prototype._place = function _place (toInsert, compare) {
   var path = []
   var side = ''
   var node = this
@@ -98,7 +149,7 @@ Node.prototype.place = function place (toInsert, compare) {
   return path
 }
 
-Node.prototype.pluck = function pluck (toDelete, compare) {
+SplayNode.prototype._pluck = function _pluck (toDelete, compare) {
   var node = this
   var path = []
   var side = ''
@@ -119,47 +170,25 @@ Node.prototype.pluck = function pluck (toDelete, compare) {
   return path
 }
 
-Node.prototype.join = function join (right) {
-  var left = this
-  if (left === empty) {
-    return right
-  }
-  var result = splay(left.highest())
-  result.right = right
-  return result
+SplayNode.prototype.copy = function copy () {
+  return new SplayNode(this.value, this.left, this.right)
 }
 
-Node.prototype.unshift = function unshift (item) {
-  var node = new Node(item)
-  var path = this.lowest()
-  path.push('left')
-  path.push(node)
-  return splay(path)
-}
-
-Node.prototype.shift = function shift () {
-  return splay(this.lowest()).right
-}
-
-Node.prototype.copy = function copy () {
-  return new Node(this.value, this.left, this.right)
-}
-
-Node.prototype.higher = function higher () {
+SplayNode.prototype._higher = function _higher () {
   var path = [this, 'right']
   var node = this.right
   if (node === empty) return empty
-  return node.lowest(path)
+  return node._lowest(path)
 }
 
-Node.prototype.lower = function lower () {
+SplayNode.prototype._lower = function _lower () {
   var path = [this, 'left']
   var node = this.left
   if (node === empty) return path
-  return node.highest(path)
+  return node._highest(path)
 }
 
-Node.prototype.highest = function highest (path) {
+SplayNode.prototype._highest = function _highest (path) {
   var node = this
   path || (path = [])
   path.push(this.copy())
@@ -171,7 +200,7 @@ Node.prototype.highest = function highest (path) {
   return path
 }
 
-Node.prototype.lowest = function lowest (path) {
+SplayNode.prototype._lowest = function _lowest (path) {
   var node = this
   path || (path = [])
   path.push(node.copy())
@@ -181,31 +210,5 @@ Node.prototype.lowest = function lowest (path) {
     path.push(node.copy())
   }
   return path
-}
-
-Node.prototype.pop = function pop () {
-  return splay(this.highest()).left
-}
-
-Node.prototype.push = function push (item) {
-  var node = new Node(item)
-  var path = this.highest()
-  path.push('right')
-  path.push(node)
-  return splay(path)
-}
-
-Node.prototype.first = function first () {
-  if (this.left === empty) {
-    return this
-  }
-  return splay(this.lowest())
-}
-
-Node.prototype.last = function last () {
-  if (this.right === empty) {
-    return this
-  }
-  return splay(this.highest())
 }
 
