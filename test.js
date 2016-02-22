@@ -4,29 +4,30 @@ var splay = require('./index')
 function gt (a, b) { return a - b }
 
 test('splay', function (t) {
-  var tree = splay()
-  t.equal(tree, splay.empty, 'Created the empty tree')
+  var tree = splay(gt)
+  var orig = tree
+  t.ok(tree.isEmpty(), 'Created the empty tree')
   t.equal(tree.value, undefined, 'empty tree value is undefined')
-  tree = tree.insert(1, gt)
+  tree = tree.insert(1)
   t.equal(tree.value, 1, 'returns node')
   var two = 2
-  tree = tree.insert(two, gt)
+  tree = tree.insert(two)
   t.equal(tree.value, 2, 'returns node again')
   t.equal(tree.left.value, 1, 'puts original value on left subtree')
-  tree = tree.insert(3, gt)
+  tree = tree.insert(3)
   t.equal(tree.left.left.value, 1, 'puts original value on left subtree')
-  tree = tree.insert(4, gt)
+  tree = tree.insert(4)
   t.equal(tree.left.left.left.value, 1, 'puts original value on left subtree')
-  tree = tree.insert(5, gt)
+  tree = tree.insert(5)
   t.equal(tree.left.left.left.left.value, 1, 'puts original value on left subtree')
-  tree = tree.insert(0.5, gt)
+  tree = tree.insert(0.5)
   t.equal(tree.right.value, 5, 'left-left tree')
   t.equal(tree.right.left.value, 3, 'left-left tree')
-  tree = tree.remove(2, gt)
+  tree = tree.remove(2)
 
   t.equal(
     tree.left.left.left.left.left.left.right.left.right.left.left.right.left,
-    splay.empty,
+    orig,
     'everything is empty at the end'
   )
 
@@ -40,7 +41,7 @@ test('splay', function (t) {
 })
 
 test('deque', function (t) {
-  var tree = splay(1)
+  var tree = splay().insert(1)
   t.equal(tree.value, 1, 'returns node')
   tree = tree.push(2)
   tree = tree.push(3)
@@ -74,9 +75,8 @@ test('perf', function (t) {
   console.log('# ' + (Date.now() - time))
   time = Date.now()
   var tree = lots.reduce(function (root, value) {
-    if (!root) return splay(value)
-    return root.insert(value, gt)
-  }, null)
+    return root.insert(value)
+  }, splay(gt))
   var lotsA = new Array(j)
   tree.forEach(function (val, i) {
     lotsA[i] = val
