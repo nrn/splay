@@ -5,6 +5,7 @@ var not = {
 
 var empty = new SplayNode ()
 empty.left = empty.right = empty
+SplayNode.prototype.empty = empty
 
 if (typeof Object.freeze === 'function') {
   Object.freeze(empty)
@@ -26,6 +27,7 @@ function createTree (compare) {
 
   var root = new SpecificSplay()
   root.left = root.right = root
+  SpecificSplay.prototype.empty = root
 
 
   if (typeof Object.freeze === 'function') {
@@ -45,6 +47,37 @@ function SplayNode (value, left, right) {
 
 SplayNode.prototype._compare = defCompare
 
+SplayNode.prototype.access = function access (item) {
+  var path = this._pathTo(item)
+  return this._splay(path)
+}
+
+SplayNode.prototype._pathTo = function pathTo (item) {
+  var node = this
+  var path = []
+  var side = ''
+  var comp
+  path.push(node.copy())
+  while (!node.isEmpty()) {
+    comp = this._compare(item, node.value)
+    if (comp === 0) {
+      break
+    }
+    if (comp < 0) {
+      side = 'left'
+    } else {
+      side = 'right'
+    }
+    node = node[side]
+    if (node.isEmpty()) {
+      break
+    }
+    path.push(side)
+    path.push(node.copy())
+  }
+  return path
+}
+
 SplayNode.prototype.insert = function insert (item) {
   return this._splay(this._place(new this.constructor(item)))
 }
@@ -55,7 +88,7 @@ SplayNode.prototype.remove = function remove (item, fn) {
 
 SplayNode.prototype.forEach = function forEach (cb) {
   var idx = 0
-  tree = this.first()
+  var tree = this.first()
   cb(tree.value, idx++)
 
   tree = tree.right
@@ -76,19 +109,36 @@ SplayNode.prototype.join = function join (right) {
   return result
 }
 
+SplayNode.prototype.split = function (item) {
+  var more = this.access(item)
+  var less = more.left
+  more.left = this.empty
+  return [ less, more ]
+}
+
+SplayNode.prototype.uInsert = function (item) {
+  var root = this.access(item)
+  if (this._compare(item, root.value) === 0) {
+    root.value = item
+    return root
+  } else {
+    return this.insert(item)
+  }
+}
+
 SplayNode.prototype.isEmpty = function isEmpty () {
   return (this === this.right && this === this.left)
 }
 
 SplayNode.prototype.first = function first () {
-  if (this.left === empty) {
+  if (this.left.isEmpty()) {
     return this
   }
   return this._splay(this._lowest())
 }
 
 SplayNode.prototype.last = function last () {
-  if (this.right === empty) {
+  if (this.right.isEmpty()) {
     return this
   }
   return this._splay(this._highest())
@@ -117,7 +167,6 @@ SplayNode.prototype.push = function push (item) {
 }
 
 SplayNode.prototype._splay = function _splay (path) {
-  if (!path) return empty
   var newRoot = path.pop()
   var par
   var gp
@@ -191,14 +240,15 @@ SplayNode.prototype.copy = function copy () {
 }
 
 SplayNode.prototype._higher = function _higher () {
-  var path = [this, 'right']
+  var path = [this.copy(), 'right']
   var node = this.right
-  if (node.isEmpty()) return node
+  if (node.isEmpty()) return this
+  path.push(this.right.copy())
   return node._lowest(path)
 }
 
 SplayNode.prototype._lower = function _lower () {
-  var path = [this, 'left']
+  var path = [this.copy(), 'left']
   var node = this.left
   if (node.isEmpty()) return path
   return node._highest(path)
@@ -217,9 +267,8 @@ SplayNode.prototype._highest = function _highest (path) {
 }
 
 SplayNode.prototype._lowest = function _lowest (path) {
-  var node = this
-  path || (path = [])
-  path.push(node.copy())
+  path || (path = [ this.copy() ])
+  var node = path[path.length - 1]
   while (!node.left.isEmpty()) {
     node = node.left
     path.push('left')
@@ -229,6 +278,11 @@ SplayNode.prototype._lowest = function _lowest (path) {
 }
 
 function defCompare (a, b) {
-  return String(a) > String(b) ? 1 : - 1
+  var stringA = String(a)
+  var stringB = String(b)
+  if (stringA === stringB) {
+    return 0
+  }
+  return stringA > stringB ? 1 : - 1
 }
 

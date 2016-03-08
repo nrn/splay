@@ -23,7 +23,10 @@ test('splay', function (t) {
   tree = tree.insert(0.5)
   t.equal(tree.right.value, 5, 'left-left tree')
   t.equal(tree.right.left.value, 3, 'left-left tree')
+  t.ok(tree.split(2)[0].value < 2, 'left tree smaller')
+  t.equal(tree.access(2).value, 2, 'two is there')
   tree = tree.remove(2)
+  t.notEqual(tree.access(2).value, 2, 'two is not there')
 
   t.equal(
     tree.left.left.left.left.left.left.right.left.right.left.left.right.left,
@@ -36,6 +39,24 @@ test('splay', function (t) {
     res.push(item)
   })
   t.same(res, [0.5, 1, 3, 4, 5], 'sequential read')
+
+  // Show working with multiple items with same comparison value.
+  var strTree = splay()
+  strTree = strTree.uInsert('1')
+  strTree = strTree.uInsert('2')
+  var oldStrTree = strTree = strTree.uInsert(3)
+  strTree = strTree.uInsert('3')
+  strTree = strTree.uInsert(2)
+  var strVals = []
+  strTree.forEach(function (item) {
+    strVals.push(item)
+  })
+  var oldVals = []
+  oldStrTree.forEach(function (item) {
+    oldVals.push(item)
+  })
+  t.same(oldVals, ['1', '2', 3], 'sequential read of oldStrTree')
+  t.same(strVals, ['1', 2, '3'], 'sequential read of strTree')
 
   t.end()
 })
@@ -72,6 +93,10 @@ test('perf', function (t) {
   }
   var time = Date.now()
   lotsQ.sort(function (a, b) { return a - b })
+  var lotsB = new Array(j)
+  lotsQ.forEach(function (val, i) {
+    lotsB[i] = val
+  })
   console.log('# ' + (Date.now() - time))
   time = Date.now()
   var tree = lots.reduce(function (root, value) {
