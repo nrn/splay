@@ -34,9 +34,7 @@ function createTree (compare) {
     Object.freeze(root)
   }
 
-
   return root
-
 }
 
 function SplayNode (value, left, right) {
@@ -117,8 +115,9 @@ SplayNode.prototype.split = function (item) {
 }
 
 SplayNode.prototype.uInsert = function (item) {
+  if (this.isEmpty()) return this.insert(item)
   var root = this.access(item)
-  if (this._compare(item, root.value) === 0) {
+  if (!root.isEmpty() && this._compare(item, root.value) === 0) {
     root.value = item
     return root
   } else {

@@ -1,7 +1,7 @@
 {
   "name": "splay",
-  "version": "0.0.5",
-  "description": "Splay trees.",
+  "version": "0.1.0",
+  "description": "Immutable splay trees.",
   "main": "index.js",
   "scripts": {
     "test": "node test.js"
