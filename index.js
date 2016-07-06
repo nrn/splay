@@ -3,7 +3,7 @@ var not = {
   left: 'right'
 }
 
-var empty = new SplayNode ()
+var empty = new SplayNode()
 empty.left = empty.right = empty
 SplayNode.prototype.empty = empty
 
@@ -29,7 +29,6 @@ function createTree (compare) {
   root.left = root.right = root
   SpecificSplay.prototype.empty = root
 
-
   if (typeof Object.freeze === 'function') {
     Object.freeze(root)
   }
@@ -48,6 +47,17 @@ SplayNode.prototype._compare = defCompare
 SplayNode.prototype.access = function access (item) {
   var path = this._pathTo(item)
   return this._splay(path)
+}
+
+SplayNode.prototype.find = function find (start, end, reverse) {
+  if (typeof end === 'undefined') end = start
+  var results = []
+  var node = this.access(start)
+  while (!node.isEmpty() && this._compare(end, node.value) >= 0) {
+    results.push(node.value)
+    node = node.right.first()
+  }
+  return reverse ? results.reverse() : results
 }
 
 SplayNode.prototype._pathTo = function pathTo (item) {
@@ -80,20 +90,21 @@ SplayNode.prototype.insert = function insert (item) {
   return this._splay(this._place(new this.constructor(item)))
 }
 
-SplayNode.prototype.remove = function remove (item, fn) {
+SplayNode.prototype.remove = function remove (item) {
+  var path = this._pathTo(item)
+  var len = path.length
+  var node = path.pop()
+  var last = node.left.join(node.right)
+  if (len === 1) return last
   return this._splay(this._pluck(item))
 }
 
 SplayNode.prototype.forEach = function forEach (cb) {
   var idx = 0
   var tree = this.first()
-  cb(tree.value, idx++)
-
-  tree = tree.right
   while (!tree.isEmpty()) {
-    tree = tree.first()
     cb(tree.value, idx++)
-    tree = tree.right
+    tree = tree.right.first()
   }
 }
 
@@ -230,7 +241,7 @@ SplayNode.prototype._pluck = function _pluck (toDelete) {
     }
     path.push(side)
   }
-  path[path.length -1][side] = node.left.join(node.right)
+  path[path.length - 1][side] = node.left.join(node.right)
   return path
 }
 
@@ -282,6 +293,6 @@ function defCompare (a, b) {
   if (stringA === stringB) {
     return 0
   }
-  return stringA > stringB ? 1 : - 1
+  return stringA > stringB ? 1 : -1
 }
 

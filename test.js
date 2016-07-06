@@ -25,6 +25,10 @@ test('splay', function (t) {
   t.equal(tree.right.left.value, 3, 'left-left tree')
   t.ok(tree.split(2)[0].value < 2, 'left tree smaller')
   t.equal(tree.access(2).value, 2, 'two is there')
+  t.same(tree.find(2), [2], 'finds a two')
+  t.same(tree.find(2, 4), [2, 3, 4], 'finds 2 through 4')
+  t.same(tree.find(2, 4, true), [4, 3, 2], 'also in reverse')
+  // tree = tree.insert(2)
   tree = tree.remove(2)
   t.notEqual(tree.access(2).value, 2, 'two is not there')
 
@@ -37,6 +41,10 @@ test('splay', function (t) {
   var res = []
   tree.forEach(function (item) {
     res.push(item)
+  })
+  orig.forEach(function (item) {
+    // never called in empty tree
+    throw new Error('Empty tree called foreach cb')
   })
   t.same(res, [0.5, 1, 3, 4, 5], 'sequential read')
 
@@ -57,6 +65,24 @@ test('splay', function (t) {
   })
   t.same(oldVals, ['1', '2', 3], 'sequential read of oldStrTree')
   t.same(strVals, ['1', 2, '3'], 'sequential read of strTree')
+
+  t.end()
+})
+test('remove', function (t) {
+  var tree1 = splay()
+  tree1 = tree1.insert(1)
+  tree1 = tree1.remove(1)
+  t.ok(tree1.isEmpty(), 'remove single item')
+
+  var tree2 = splay()
+  tree2 = tree2.insert(2)
+  tree2 = tree2.insert(2)
+  tree2 = tree2.remove(2)
+  var res = []
+  tree2.forEach(function (v) {
+    res.push(v)
+  })
+  t.same(res, [2])
 
   t.end()
 })
